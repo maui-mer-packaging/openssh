@@ -124,10 +124,11 @@ License: BSD
 Group: Applications/Internet
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 %if %{nologin}
+BuildRequires: pkgconfig(systemd)
 Requires: /sbin/nologin
-Requires: /bin/systemctl
-Requires(preun):  /bin/systemctl
-Requires(postun): /bin/systemctl
+Requires(preun): systemd
+Requires(post): systemd
+Requires(postun): systemd
 %endif
 
 %if ! %{no_gnome_askpass}
@@ -365,15 +366,15 @@ install -m755 contrib/ssh-copy-id $RPM_BUILD_ROOT%{_bindir}/
 install contrib/ssh-copy-id.1 $RPM_BUILD_ROOT%{_mandir}/man1/
 
 # systemd integration
-install -D -m 0644 %{SOURCE4} %{buildroot}/%{_lib}/systemd/system/sshd.service
-install -D -m 0644 %{SOURCE5} %{buildroot}/%{_lib}/systemd/system/sshd@.service
-install -D -m 0644 %{SOURCE6} %{buildroot}/%{_lib}/systemd/system/sshd.socket
-install -D -m 0644 %{SOURCE7} %{buildroot}/%{_lib}/systemd/system/sshd-keys.service
-mkdir -p %{buildroot}/%{_lib}/systemd/system/multi-user.target.wants
-ln -s ../sshd.socket %{buildroot}/%{_lib}/systemd/system/multi-user.target.wants/sshd.socket
+install -D -m 0644 %{SOURCE4} %{buildroot}%{_unitdir}/sshd.service
+install -D -m 0644 %{SOURCE5} %{buildroot}%{_unitdir}/sshd@.service
+install -D -m 0644 %{SOURCE6} %{buildroot}%{_unitdir}/sshd.socket
+install -D -m 0644 %{SOURCE7} %{buildroot}%{_unitdir}/sshd-keys.service
+mkdir -p %{buildroot}%{_unitdir}/multi-user.target.wants
+ln -s ../sshd.socket %{buildroot}%{_unitdir}/multi-user.target.wants/sshd.socket
 install -D -m 0755 %{SOURCE8} %{buildroot}/usr/sbin/sshd-hostkeys
-mkdir -p %{buildroot}/%{_lib}/systemd/system/multi-user.target.wants
-ln -s ../sshd-keys.service %{buildroot}/%{_lib}/systemd/system/multi-user.target.wants/sshd-keys.service
+mkdir -p %{buildroot}%{_unitdir}/multi-user.target.wants
+ln -s ../sshd-keys.service %{buildroot}%{_unitdir}/multi-user.target.wants/sshd-keys.service
 
 
 %if ! %{no_gnome_askpass}
@@ -446,12 +447,10 @@ systemctl daemon-reload
 systemctl daemon-reload
  
 %preun
-# any service
-systemctl stop sshd.service
+%systemd_preun sshd.service
 
 %postun
 systemctl daemon-reload
-
  
 %files
 %defattr(-,root,root)
@@ -508,12 +507,12 @@ systemctl daemon-reload
 %attr(0644,root,root) %{_mandir}/man8/sftp-server.8*
 %attr(0600,root,root) %config(noreplace) %{_sysconfdir}/ssh/sshd_config
 %attr(0644,root,root) %config(noreplace) /etc/pam.d/sshd
-/%{_lib}/systemd/system/sshd.service 
-/%{_lib}/systemd/system/sshd.socket
-/%{_lib}/systemd/system/sshd@.service
-/%{_lib}/systemd/system/sshd-keys.service
-/%{_lib}/systemd/system/multi-user.target.wants/sshd.socket
-/%{_lib}/systemd/system/multi-user.target.wants/sshd-keys.service
+%{_unitdir}/sshd.service
+%{_unitdir}/sshd.socket
+%{_unitdir}/sshd@.service
+%{_unitdir}/sshd-keys.service
+%{_unitdir}/multi-user.target.wants/sshd.socket
+%{_unitdir}/multi-user.target.wants/sshd-keys.service
 /usr/sbin/sshd-hostkeys
 
 %endif
